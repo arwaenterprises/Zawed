@@ -59,7 +59,7 @@ export default function App() {
               <button className="secondary back" onClick={() => setOpenId(null)}>← Back to home</button>
               <section className="panel">
                 <h2>{current.icon} {current.title}</h2>
-                {current.render()}
+                {current.render(account)}
               </section>
             </>
           ) : (

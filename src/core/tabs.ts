@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { Account } from './account'
 
 /**
  * Every tab (Expenses, Documents, Locations, ...) is a self-contained module
@@ -10,7 +11,7 @@ export interface TabModule {
   icon: string
   color: string
   blurb: string
-  render: () => ReactNode
+  render: (account: Account) => ReactNode
 }
 
 export const tabs: TabModule[] = []

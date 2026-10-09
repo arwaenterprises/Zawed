@@ -1,12 +1,12 @@
 import { registerTab } from '../core/tabs'
+import ExpensesTab from './expenses/ExpensesTab'
 
-// Placeholders for the first three tabs; each will move into its own folder
-// (src/tabs/expenses, src/tabs/documents, src/tabs/locations) as it is built.
+// Documents and Locations are placeholders; each will move into its own folder as it is built.
 const comingSoon = () => <p>This tab is being built. It will appear here soon.</p>
 
 registerTab({
   id: 'expenses', title: 'Expenses', icon: '💰', color: '#16a34a',
-  blurb: 'Track spending in riyal and rupees', render: comingSoon,
+  blurb: 'Track spending in riyal and rupees', render: (account) => <ExpensesTab account={account} />,
 })
 registerTab({
   id: 'documents', title: 'Documents', icon: '📄', color: '#2563eb',

@@ -1,0 +1,49 @@
+# Family Manager — Roadmap (updated 9 Oct 2026)
+
+## Context
+"Family Manager" is a free, installable PWA with independent tabs (mini-apps) for a family's money, documents, places, study and more. Admin-controlled access, offline use, voice input and AI help (quiz creation first). Built for non-technical users: large text and buttons, colourful and playful, guided mode, reminders. Android phones + Windows laptops, English only. 20+ users scaling to hundreds, multi-family (owner approves each family; owner is super-admin).
+
+This file is the hand-off document. It contains no secrets; keys go only in `.env.local`, which is git-ignored.
+
+## Final decisions
+- Stack: React + Vite + TypeScript PWA, Supabase (free tier only, no paid plan). Login = **email + password** (Google sign-in dropped). PIN and fingerprint unlock later.
+- Roles: admin (full) / adult / teen / child / guest. Everyone but admin starts with no access to any tab; admin grants none / view / edit / full per tab per person. Admin sees everything; private items visible only to owner and admin. Activity log is admin-only.
+- Families start "pending"; super-admin approves.
+- Currencies SAR + INR with automatic conversion. Expenses by typing, voice or receipt photo.
+- Passwords tab: master PIN, never sent to AI, admin can reset the PIN (old passwords are lost).
+- Study (daughter, 12, class 5 CBSE, Maths and Science): quizzes (multiple choice + written), results go to admin first then published to her, she uses her laptop, feedback and roadmap from history. School portal site is only a marketing page, so use uploaded PDFs and forwarded email, not login automation.
+- Medical tab: end of 3rd week of October.
+- Emergency access for wife after 1 week of admin inactivity: later phase.
+- Free-tier handling (recommended, owner to confirm): keep-alive ping against pausing, large PDFs via links (Google Drive), scheduled data export + "Download my data" button.
+
+## Status
+Done:
+- PWA shell: install prompt, centred update pop-up, large-text theme, tab registry (`src/core/tabs.ts`, `src/tabs/index.tsx`).
+- `supabase/migrations/0001_core.sql`: profiles, families, members, tab_permissions, activity_log, expenses, row-level security, `create_family` function. 17 SQL access checks pass (`supabase/tests/`), run on plain Postgres with a stand-in for Supabase auth, not yet on real Supabase.
+- Email/password sign-in, create-family and super-admin approval screens (build and lint pass; not tested against a real project).
+
+## Owner steps
+1. Create a free Supabase project; copy Project URL and anon (public) key. Never share the `service_role` key or DB password.
+2. Run `supabase/migrations/0001_core.sql` in the Supabase SQL Editor.
+3. Authentication > Email: switch off "Confirm email" (free built-in email is likely rate-limited; verify in docs).
+4. Put the URL and key in `.env.local` (see `.env.example`); never commit it.
+5. Create the owner account in the app, then make it super-admin with one SQL line: `update public.profiles set is_super_admin = true where email = '<owner email>';`
+6. Confirm the three free-tier choices (keep-alive, large PDFs via links, backups).
+
+## Next build steps
+1. Expenses tab: SAR/INR, categories, per-person, voice, receipt photo, charts, offline add + sync.
+2. Documents tab (expiry reminders) and Locations tab (map link, directions).
+3. Admin screens: add members, set per-tab access, access requests, activity log view, Passwords PIN reset.
+4. Hosting for the PWA (free static host; to be chosen).
+5. Later: Study tab + AI quiz generation (free-tier AI, key kept server-side), Passwords, Work to do, Medical (due end of 3rd week of Oct), emergency access, PIN/fingerprint, optional phone OTP.
+
+## Verification
+- `npm run build`, `npm run lint`; SQL tests in `supabase/tests/` re-run against the real project.
+- Lighthouse PWA audit; install and update pop-ups on Android Chrome and Windows Chrome/Edge.
+- Offline test: add an expense offline, reconnect, confirm sync.
+- Owner walk-through as tester.
+
+## Open items
+- Confirm free-tier choices above.
+- Verify Supabase free limits on supabase.com/pricing (about 500 MB DB, 1 GB storage, pauses after about 1 week idle, no automatic backups; figures from a search, not confirmed).
+- Deadline of 12 Oct is a starter version only (login + Expenses).

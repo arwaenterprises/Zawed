@@ -80,4 +80,51 @@ select pg_temp.check('owner sees all 4 expenses', (select count(*) from public.e
 select pg_temp.check('activity log records the 4 additions', (select count(*) from public.activity_log where action='insert')=4);
 with u as (update public.expenses set amount=amount where user_id='00000000-0000-0000-0000-000000000002' returning 1)
   select pg_temp.check('owner can edit wife expense', count(*)=2) from u;
+
+-- ------------------------------------------------ 0002: categories, budgets, repeating
+select pg_temp.as_user(1);
+select public.seed_expense_categories(current_setting('app.fid')::uuid);
+select pg_temp.check('starter categories exist with sub-categories',
+  (select count(*) from public.expense_categories where parent_id is null)=10
+  and (select count(*) from public.expense_categories where parent_id is not null)=21);
+select public.seed_expense_categories(current_setting('app.fid')::uuid);
+select pg_temp.check('seed twice does not duplicate', (select count(*) from public.expense_categories)=31);
+select pg_temp.denied('no sub-sub-categories',
+  format($q$insert into public.expense_categories (family_id,parent_id,name) select family_id,id,'Deep' from public.expense_categories where name='Fuel' and family_id=%L$q$, current_setting('app.fid')));
+select pg_temp.denied('no duplicate category names',
+  format($q$insert into public.expense_categories (family_id,name) values (%L,'food')$q$, current_setting('app.fid')));
+insert into public.expense_budgets values (current_setting('app.fid')::uuid, '', 3000);
+
+select pg_temp.as_user(2);  -- wife: edit level
+select pg_temp.check('wife sees categories and budget', (select count(*) from public.expense_categories)=31 and (select count(*) from public.expense_budgets)=1);
+insert into public.expense_categories (family_id,name,icon) values (current_setting('app.fid')::uuid,'Pets','🐶');
+select pg_temp.check('wife can add a category', (select count(*) from public.expense_categories where name='Pets')=1);
+with u as (update public.expense_categories set name='Hacked' where name='Food' returning 1)
+  select pg_temp.check('wife cannot rename a category', count(*)=0) from u;
+with d as (delete from public.expense_categories where name='Pets' returning 1)
+  select pg_temp.check('wife cannot delete a category', count(*)=0) from d;
+select pg_temp.denied('wife cannot set a budget', format($q$insert into public.expense_budgets values (%L,'Food',1)$q$, current_setting('app.fid')));
+select pg_temp.denied('wife cannot seed another family', $q$select public.seed_expense_categories(gen_random_uuid())$q$);
+insert into public.expense_recurring (id,family_id,user_id,amount,currency,every,next_on,is_private)
+  values (gen_random_uuid(), current_setting('app.fid')::uuid, auth.uid(), 25, 'SAR', 'monthly', current_date, true);
+select pg_temp.check('wife sees her repeating expense', (select count(*) from public.expense_recurring)=1);
+select pg_temp.denied('wife cannot add a repeating expense for someone else',
+  format($q$insert into public.expense_recurring (id,family_id,user_id,amount,currency,every,next_on) values (gen_random_uuid(),%L,'00000000-0000-0000-0000-000000000001',1,'SAR','daily',current_date)$q$, current_setting('app.fid')));
+
+select pg_temp.as_user(3);  -- son: nothing
+select pg_temp.check('son sees no categories/budgets/repeating',
+  (select count(*) from public.expense_categories)+(select count(*) from public.expense_budgets)+(select count(*) from public.expense_recurring)=0);
+select pg_temp.denied('son cannot add a category', format($q$insert into public.expense_categories (family_id,name) values (%L,'Sneaky')$q$, current_setting('app.fid')));
+
+select pg_temp.as_user(4);  -- stranger
+select pg_temp.check('stranger sees no categories', (select count(*) from public.expense_categories)=0);
+
+select pg_temp.as_user(1);  -- owner
+select pg_temp.check('owner sees wife private repeating expense', (select count(*) from public.expense_recurring)=1);
+with u as (update public.expense_categories set name='Meals' where name='Food' returning 1)
+  select pg_temp.check('owner can rename a category', count(*)=1) from u;
+with d as (delete from public.expense_categories where name='Bills' returning 1)
+  select pg_temp.check('owner deletes a category', count(*)=1) from d;
+select pg_temp.check('deleting a category deletes its sub-categories',
+  (select count(*) from public.expense_categories where name in ('Electricity','Water','Mobile','Internet'))=0);
 \echo ALL ACCESS CHECKS PASSED

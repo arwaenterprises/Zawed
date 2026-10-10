@@ -4,8 +4,9 @@ A simple, colourful family app (PWA) with separate tabs for expenses, documents,
 Works on Android phones and Windows laptops, installs from the browser, and is built to work offline.
 
 ## Status
-Foundation only: installable PWA shell, install and "new version" pop-ups, large-text theme, and a tab
-registry with placeholder Expenses, Documents and Locations tabs. Login, roles and real tab content come next.
+Installable PWA shell with sign-in, family set-up and approval. The Expenses tab is built mobile-first
+(bottom bar, Day/Week/Month, own categories, receipt photos, budgets, repeating expenses, CSV).
+Other tabs are placeholders until Expenses is finished. See `ROADMAP.md.txt`.
 
 ## Develop
 ```

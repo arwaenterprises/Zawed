@@ -30,8 +30,20 @@ export default function App() {
   return (
     <main className="app">
       <header className="app-header">
-        <span style={{ fontSize: '2.4rem' }} aria-hidden>🏠</span>
-        <h1>Family Manager</h1>
+        {current ? (
+          <>
+            <button className="icon-btn" onClick={() => setOpenId(null)} aria-label="Back to home">‹</button>
+            <h1><span aria-hidden>{current.icon}</span> {current.title}</h1>
+          </>
+        ) : (
+          <>
+            <span className="em" aria-hidden>🏠</span>
+            <h1>Family Manager</h1>
+          </>
+        )}
+        {account.session && (
+          <button className="icon-btn" onClick={() => supabase?.auth.signOut()} aria-label="Sign out">🚪</button>
+        )}
       </header>
 
       {!isConfigured ? (
@@ -45,36 +57,24 @@ export default function App() {
         <AuthScreen />
       ) : (
         <>
-          <div className="row">
-            <span className="hint">{account.session.user.email}</span>
-            <button className="secondary" onClick={() => supabase?.auth.signOut()}>Sign out</button>
-          </div>
+          {!current && <p className="who">👤 {account.session.user.email}</p>}
           {account.isSuperAdmin && <ApproveFamilies account={account} />}
           {!family ? (
             <CreateFamily onDone={account.refresh} />
           ) : family.status !== 'active' ? (
             <WaitingForApproval status={family.status} onCheck={account.refresh} />
           ) : current ? (
-            <>
-              <button className="secondary back" onClick={() => setOpenId(null)}>← Back to home</button>
-              <section className="panel">
-                <h2>{current.icon} {current.title}</h2>
-                {current.render(account)}
-              </section>
-            </>
+            current.render(account)
           ) : (
-            <>
-              <p className="hint">Tap a big card to open it.</p>
-              <div className="tile-grid">
-                {tabs.map((t) => (
-                  <button key={t.id} className="tile" style={{ background: t.color }} onClick={() => setOpenId(t.id)}>
-                    <span className="tile-icon" aria-hidden>{t.icon}</span>
-                    {t.title}
-                    <span className="tile-blurb">{t.blurb}</span>
-                  </button>
-                ))}
-              </div>
-            </>
+            <div className="tile-grid">
+              {tabs.map((t) => (
+                <button key={t.id} className="tile" style={{ background: t.color }} onClick={() => setOpenId(t.id)}>
+                  <span className="tile-icon" aria-hidden>{t.icon}</span>
+                  {t.title}
+                  <span className="tile-blurb">{t.blurb}</span>
+                </button>
+              ))}
+            </div>
           )}
         </>
       )}
